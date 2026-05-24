@@ -988,3 +988,101 @@ textarea {
     min-width: 132px;
   }
 }
+
+/* ─── Model Switcher redesign + animations ─────────────────────────────── */
+.topbar-right {
+  gap: 10px;
+}
+
+.model-switcher {
+  position: relative;
+  padding: 0;
+  border-radius: 18px;
+  overflow: hidden;
+  gap: 0;
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+}
+
+.model-switcher:hover {
+  transform: translateY(-1px);
+  border-color: var(--line-strong);
+  box-shadow: 0 8px 28px rgba(58, 116, 255, 0.14);
+}
+
+.model-switcher select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding: 10px 38px 10px 14px;
+  border-radius: 18px;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: background 160ms ease;
+}
+
+.model-switcher::after {
+  content: "";
+  position: absolute;
+  right: 13px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid var(--muted);
+  border-bottom: 2px solid var(--muted);
+  transform: translateY(-65%) rotate(45deg);
+  pointer-events: none;
+  transition: transform 180ms ease, border-color 180ms ease;
+}
+
+.model-switcher:hover::after {
+  border-color: var(--accent);
+}
+
+/* ─── + Button animation ─────────────────────────────────────────────── */
+#attachBtn {
+  font-size: 1.2rem;
+  font-weight: 400;
+  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+              background 180ms ease,
+              border-color 180ms ease,
+              box-shadow 180ms ease;
+}
+
+#attachBtn:hover {
+  transform: rotate(45deg) scale(1.08);
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(58, 116, 255, 0.12);
+}
+
+.attach-menu.open ~ #attachBtn,
+#attachBtn[data-open="true"] {
+  transform: rotate(45deg);
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+
+/* Animate attach-menu items with stagger */
+.attach-menu.open .attach-option:nth-child(1) { animation: slide-up 200ms 30ms both cubic-bezier(0.22,1,0.36,1); }
+.attach-menu.open .attach-option:nth-child(2) { animation: slide-up 200ms 80ms both cubic-bezier(0.22,1,0.36,1); }
+.attach-menu.open .attach-option:nth-child(3) { animation: slide-up 200ms 130ms both cubic-bezier(0.22,1,0.36,1); }
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(8px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Mic button hover */
+#micBtn {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  transition: transform 180ms ease, background 180ms ease, border-color 180ms ease, color 180ms ease;
+}
+
+#micBtn:hover {
+  transform: translateY(-1px) scale(1.04);
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+}
