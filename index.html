@@ -6,10 +6,7 @@
     <title>Aluetoo AI</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap"
-      rel="stylesheet"
-    />
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -24,31 +21,22 @@
               <h1>Aluetoo AI</h1>
             </div>
           </div>
-          <button class="icon-btn close-drawer" id="closeDrawerBtn" type="button" aria-label="Fermer le menu">
-            <span></span>
-            <span></span>
+          <button class="icon-btn close-drawer" id="closeDrawerBtn" type="button" aria-label="Fermer">
+            <span></span><span></span>
           </button>
         </div>
-
         <button class="new-chat-btn" id="newChatBtn" type="button">+ Nouvelle conversation</button>
-
         <section class="sidebar-group">
-          <div class="sidebar-section-head">
-            <p class="sidebar-label">Historique</p>
-          </div>
+          <p class="sidebar-label">Historique</p>
           <div class="history-list" id="historyList"></div>
         </section>
       </aside>
-
       <div class="backdrop" id="backdrop"></div>
-
       <main class="chat-app">
         <header class="topbar">
           <div class="topbar-left">
-            <button class="icon-btn menu-btn" id="menuBtn" type="button" aria-label="Ouvrir le menu">
-              <span></span>
-              <span></span>
-              <span></span>
+            <button class="icon-btn menu-btn" id="menuBtn" type="button" aria-label="Menu">
+              <span></span><span></span><span></span>
             </button>
             <div>
               <p class="topbar-kicker">Aluetoo AI</p>
@@ -59,67 +47,70 @@
             <button class="chip chip-button" id="themeBtn" type="button">Theme: Auto</button>
           </div>
         </header>
-
         <section class="conversation" id="conversation">
           <div class="welcome" id="welcomePanel">
             <h3 id="welcomeGreeting">Bonjour, comment puis-je vous aider ?</h3>
             <div class="prompt-grid">
               <button class="prompt-card suggestion-card" data-prompt="Planifie-moi ce projet en 5 etapes claires">
-                <strong>Planifier</strong>
-                <span>Etapes simples et efficaces</span>
+                <strong>Planifier</strong><span>Etapes simples et efficaces</span>
               </button>
               <button class="prompt-card suggestion-card" data-prompt="Trouve-moi des informations recentes avec des sources">
-                <strong>Chercher</strong>
-                <span>Infos recentes et references</span>
+                <strong>Chercher</strong><span>Infos recentes et references</span>
               </button>
               <button class="prompt-card suggestion-card" data-prompt="Corrige et ameliore ce texte en markdown propre">
-                <strong>Ameliorer</strong>
-                <span>Texte plus propre et plus fluide</span>
+                <strong>Ameliorer</strong><span>Texte plus propre et plus fluide</span>
               </button>
               <button class="prompt-card suggestion-card" data-prompt="Donne-moi des idees creatives autour de l IA">
-                <strong>Creer</strong>
-                <span>Inspiration rapide et utile</span>
+                <strong>Creer</strong><span>Inspiration rapide et utile</span>
               </button>
             </div>
           </div>
-
           <div class="messages" id="messages"></div>
         </section>
-
         <form class="composer" id="chatForm">
           <div class="composer-box glass">
             <div class="attachments-strip" id="attachmentsStrip" hidden></div>
-            <textarea
-              id="promptInput"
-              rows="1"
-              placeholder="Envoie un message a Aluetoo AI"
-            ></textarea>
+            <textarea id="promptInput" rows="1" placeholder="Envoie un message a Aluetoo AI"></textarea>
             <div class="composer-footer">
-              <div class="composer-tools">
-                <button class="tool-btn" id="attachBtn" type="button" aria-label="Ajouter des fichiers">+</button>
-                <div class="attach-menu glass" id="attachMenu" hidden>
-                  <button class="attach-option" type="button" data-kind="image">Photo</button>
-                  <button class="attach-option" type="button" data-kind="video">Video</button>
-                  <button class="attach-option" type="button" data-kind="pdf">PDF</button>
+              <div class="composer-left">
+                <div class="attach-wrap">
+                  <button class="tool-btn" id="attachBtn" type="button" aria-label="Fichiers">+</button>
+                  <div class="attach-menu glass" id="attachMenu" hidden>
+                    <button class="attach-option" type="button" data-kind="image">Photo</button>
+                    <button class="attach-option" type="button" data-kind="video">Video</button>
+                    <button class="attach-option" type="button" data-kind="pdf">PDF</button>
+                  </div>
+                  <input id="fileInput" type="file" multiple accept="image/*,video/*,.pdf" hidden />
                 </div>
-                <input id="fileInput" type="file" multiple accept="image/*,video/*,.pdf" hidden />
-                <button class="tool-btn" id="micBtn" type="button" aria-label="Dicter un message">Mic</button>
+                <button class="tool-btn mic-btn" id="micBtn" type="button" aria-label="Dicter">Mic</button>
               </div>
-              <div class="model-pill glass" id="modelPill">
-                <select id="modelSelectInline" aria-label="Choisir un modele">
-                  <option value="flash">Flash</option>
-                  <option value="pro">Pro</option>
-                  <option value="vision">Vision</option>
-                </select>
-                <span class="model-pill-arrow">&#x276F;</span>
+              <div class="model-picker" id="modelPicker">
+                <button class="model-pill" id="modelPillBtn" type="button">
+                  <span id="modelPillLabel">Flash</span>
+                  <span class="pill-chevron">&#8964;</span>
+                </button>
+                <div class="model-dropdown" id="modelDropdown" hidden>
+                  <button class="model-option" data-alias="flash" type="button">
+                    <span class="mo-icon">Flash</span>
+                    <span class="mo-info"><strong>Aluetoo Flash</strong><small>Rapide · 10 msg / 1h30</small></span>
+                  </button>
+                  <button class="model-option" data-alias="pro" type="button">
+                    <span class="mo-icon">Pro</span>
+                    <span class="mo-info"><strong>Aluetoo Pro</strong><small>Puissant · 3 msg / 1h30</small></span>
+                  </button>
+                  <button class="model-option" data-alias="vision" type="button">
+                    <span class="mo-icon">Vis</span>
+                    <span class="mo-info"><strong>Aluetoo Vision</strong><small>Images · 3 msg / 1h30</small></span>
+                  </button>
+                </div>
               </div>
               <button class="send-btn" type="submit" id="sendBtn" aria-label="Envoyer">&#x2191;</button>
             </div>
           </div>
+          <p class="composer-disclaimer">Aluetoo AI peut faire des erreurs. Verifiez les informations importantes.</p>
         </form>
       </main>
     </div>
-
     <script src="app.js"></script>
   </body>
 </html>
