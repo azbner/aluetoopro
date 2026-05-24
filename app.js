@@ -43,7 +43,7 @@ let availableModels = [
 const themeOrder = ["auto", "dark", "light"];
 
 // ─── Config Groq (GitHub Pages — clé intégrée) ────────────────────────────
-const GROQ_API_KEY = "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";
+const GROQ_API_KEY = "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";
 const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
 
 const MODEL_MAP = {
