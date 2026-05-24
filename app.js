@@ -45,21 +45,65 @@ const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
 
 const MODEL_MAP = {
   flash: {
-    id: "llama-3.3-70b-versatile",
+    id: "llama-3.1-8b-instant",
     label: "Aluetoo Flash",
     supportsVision: false,
+    limit: 10,
   },
   pro: {
-    id: "moonshotai/kimi-k2-instruct",
+    id: "openai/gpt-oss-120b",
     label: "Aluetoo Pro",
     supportsVision: false,
+    limit: 3,
   },
   vision: {
     id: "meta-llama/llama-4-scout-17b-16e-instruct",
     label: "Aluetoo Vision",
     supportsVision: true,
+    limit: 3,
   },
 };
+
+// ─── Rate limiting 1h30 ──────────────────────────────────────────────────────
+const RATE_LIMIT_KEY = "aluetoo-rate-limits";
+const RATE_LIMIT_MS   = 90 * 60 * 1000;
+
+function getRateLimits() {
+  try { return JSON.parse(localStorage.getItem(RATE_LIMIT_KEY) || "{}"); }
+  catch (_e) { return {}; }
+}
+function saveRateLimits(l) { localStorage.setItem(RATE_LIMIT_KEY, JSON.stringify(l)); }
+
+function getModelUsage(alias) {
+  const l = getRateLimits(), e = l[alias];
+  if (!e || Date.now() >= e.resetAt) return { count: 0, resetAt: Date.now() + RATE_LIMIT_MS };
+  return e;
+}
+function incrementModelUsage(alias) {
+  const l = getRateLimits(), u = getModelUsage(alias);
+  u.count += 1; l[alias] = u; saveRateLimits(l);
+}
+function checkRateLimit(alias) {
+  const mdl = MODEL_MAP[alias];
+  if (!mdl) return { allowed: true };
+  const u = getModelUsage(alias);
+  if (u.count >= mdl.limit) {
+    const ms = u.resetAt - Date.now();
+    const h = Math.floor(ms / 3600000), m = Math.floor((ms % 3600000) / 60000);
+    const t = h > 0 ? h + "h" + (m > 0 ? m + "min" : "") : m + " minute" + (m > 1 ? "s" : "");
+    return { allowed: false, message: "Il reste " + t + " avant la reinitialisation." };
+  }
+  return { allowed: true };
+}
+function showLimitMessage(label, limit, msg) {
+  const s = createAssistantShell();
+  s.text.classList.remove("typing-caret");
+  s.activityText.textContent = "Limite atteinte";
+  s.text.innerHTML = "<p><strong>Limite " + label + " atteinte</strong></p>" +
+    "<p>Ce modele est limite a <strong>" + limit + " message" + (limit > 1 ? "s" : "") +
+    "</strong> par periode de 1h30.</p><p>" + msg + "</p>";
+  scrollMessages();
+}
 
 function groqNormalizeAlias(alias) {
   return MODEL_MAP[alias] ? alias : "flash";
@@ -158,6 +202,7 @@ function closeSidebar() {
 
 function closeAttachMenu() {
   attachMenu.classList.remove("open");
+  attachBtn.removeAttribute("data-open");
   window.setTimeout(() => {
     if (!attachMenu.classList.contains("open")) {
       attachMenu.hidden = true;
@@ -169,6 +214,7 @@ function openAttachMenu() {
   attachMenu.hidden = false;
   requestAnimationFrame(() => {
     attachMenu.classList.add("open");
+    attachBtn.setAttribute("data-open", "true");
   });
 }
 
@@ -895,6 +941,16 @@ async function submitPrompt(prompt) {
     return;
   }
 
+  const hasImagePending = pendingAttachments.some((a) => a.kind === "image");
+  const effectiveAlias = hasImagePending ? "vision" : (modelSelect.value || "flash");
+
+  const rateCheck = checkRateLimit(effectiveAlias);
+  if (!rateCheck.allowed) {
+    const mdl = MODEL_MAP[effectiveAlias];
+    showLimitMessage(mdl.label, mdl.limit, rateCheck.message);
+    return;
+  }
+
   const conversation = ensureConversation();
   conversation.modelAlias = modelSelect.value;
 
@@ -939,6 +995,7 @@ async function submitPrompt(prompt) {
 
   try {
     const assistantReply = await streamResponse(assistantShell, conversation, attachmentsForRequest);
+    incrementModelUsage(effectiveAlias);
     conversation.messages.push({
       role: "assistant",
       content: assistantReply.content,
