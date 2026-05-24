@@ -989,60 +989,78 @@ textarea {
   }
 }
 
-/* ─── Model Switcher redesign + animations ─────────────────────────────── */
-.topbar-right {
-  gap: 10px;
-}
+/* ══════════════════════════════════════════════════════════════════════════
+   MODEL PILL — sélecteur style Gemini dans la barre de composition
+   ══════════════════════════════════════════════════════════════════════════ */
 
-.model-switcher {
+/* Retirer l'ancien model-switcher de topbar (plus utilisé) */
+.model-switcher { display: none; }
+
+/* Pill container */
+.model-pill {
   position: relative;
-  padding: 0;
-  border-radius: 18px;
-  overflow: hidden;
-  gap: 0;
-  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 4px 0 10px;
+  height: 32px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface-soft);
+  cursor: pointer;
+  flex: 0 0 auto;
+  transition: border-color 180ms ease, background 180ms ease, box-shadow 180ms ease, transform 180ms ease;
 }
 
-.model-switcher:hover {
+.model-pill:hover,
+.model-pill:focus-within {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow: 0 0 0 3px rgba(58, 116, 255, 0.12);
   transform: translateY(-1px);
-  border-color: var(--line-strong);
-  box-shadow: 0 8px 28px rgba(58, 116, 255, 0.14);
 }
 
-.model-switcher select {
+.model-pill select {
   appearance: none;
   -webkit-appearance: none;
-  padding: 10px 38px 10px 14px;
-  border-radius: 18px;
-  font-size: 0.88rem;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font-weight: 700;
+  font-size: 0.82rem;
+  outline: 0;
   cursor: pointer;
-  transition: background 160ms ease;
+  padding: 0;
+  padding-right: 2px;
+  max-width: 80px;
 }
 
-.model-switcher::after {
-  content: "";
-  position: absolute;
-  right: 13px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 8px;
-  height: 8px;
-  border-right: 2px solid var(--muted);
-  border-bottom: 2px solid var(--muted);
-  transform: translateY(-65%) rotate(45deg);
+.model-pill-arrow {
+  font-size: 0.65rem;
+  color: var(--muted);
   pointer-events: none;
-  transition: transform 180ms ease, border-color 180ms ease;
+  display: flex;
+  align-items: center;
+  transform: rotate(90deg);
+  transition: transform 200ms ease, color 180ms ease;
+  width: 16px;
+  height: 16px;
+  justify-content: center;
 }
 
-.model-switcher:hover::after {
-  border-color: var(--accent);
+.model-pill:focus-within .model-pill-arrow {
+  color: var(--accent);
+  transform: rotate(270deg);
 }
 
-/* ─── + Button animation ─────────────────────────────────────────────── */
+/* ══════════════════════════════════════════════════════════════════════════
+   + BUTTON — rotation 45° au hover et quand ouvert
+   ══════════════════════════════════════════════════════════════════════════ */
+
 #attachBtn {
-  font-size: 1.2rem;
+  font-size: 1.25rem;
   font-weight: 400;
-  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+  transition: transform 250ms cubic-bezier(0.22, 1, 0.36, 1),
               background 180ms ease,
               border-color 180ms ease,
               box-shadow 180ms ease;
@@ -1055,34 +1073,47 @@ textarea {
   box-shadow: 0 0 0 3px rgba(58, 116, 255, 0.12);
 }
 
-.attach-menu.open ~ #attachBtn,
 #attachBtn[data-open="true"] {
   transform: rotate(45deg);
   background: var(--accent-soft);
   border-color: var(--accent);
 }
 
-/* Animate attach-menu items with stagger */
-.attach-menu.open .attach-option:nth-child(1) { animation: slide-up 200ms 30ms both cubic-bezier(0.22,1,0.36,1); }
-.attach-menu.open .attach-option:nth-child(2) { animation: slide-up 200ms 80ms both cubic-bezier(0.22,1,0.36,1); }
-.attach-menu.open .attach-option:nth-child(3) { animation: slide-up 200ms 130ms both cubic-bezier(0.22,1,0.36,1); }
+/* Stagger animation des options du menu attach */
+.attach-menu.open .attach-option:nth-child(1) { animation: slide-up-opt 200ms 20ms both cubic-bezier(0.22,1,0.36,1); }
+.attach-menu.open .attach-option:nth-child(2) { animation: slide-up-opt 200ms 70ms both cubic-bezier(0.22,1,0.36,1); }
+.attach-menu.open .attach-option:nth-child(3) { animation: slide-up-opt 200ms 120ms both cubic-bezier(0.22,1,0.36,1); }
 
-@keyframes slide-up {
+@keyframes slide-up-opt {
   from { opacity: 0; transform: translateY(8px) scale(0.97); }
   to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-/* Mic button hover */
+/* Mic hover */
 #micBtn {
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
   transition: transform 180ms ease, background 180ms ease, border-color 180ms ease, color 180ms ease;
 }
-
 #micBtn:hover {
-  transform: translateY(-1px) scale(1.04);
+  transform: translateY(-1px) scale(1.05);
   background: var(--accent-soft);
   border-color: var(--accent);
   color: var(--accent);
+}
+
+/* Send button pulse on hover */
+.send-btn {
+  transition: transform 200ms cubic-bezier(0.22,1,0.36,1), box-shadow 200ms ease;
+}
+.send-btn:not(:disabled):hover {
+  transform: scale(1.08) translateY(-1px);
+  box-shadow: 0 18px 36px rgba(58, 116, 255, 0.35);
+}
+
+/* Composer footer layout */
+.composer-footer {
+  display: flex;
+  align-items: center;
 }
