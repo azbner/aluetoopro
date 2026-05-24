@@ -417,3 +417,47 @@ textarea::placeholder { color: var(--text-muted); }
 ::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 99px; }
+
+/* ══ CRITICAL LAYOUT FIXES ══════════════════════════════════════════════════ */
+
+/* Le main doit remplir toute la colonne */
+.chat-app {
+  min-height: 100vh;
+  height: 100vh;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  overflow: hidden;
+}
+
+/* La zone de conversation doit scroller, pas disparaître */
+.conversation {
+  overflow-y: auto;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Les messages doivent s'étirer */
+.messages {
+  flex: 1;
+}
+
+/* Fond visible sur la zone principale */
+.chat-app {
+  background: var(--bg);
+}
+
+/* Welcome panel visible */
+.welcome {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 200px;
+}
+
+/* Layout : la colonne droite doit remplir */
+.layout {
+  min-height: 100vh;
+  align-items: stretch;
+}
