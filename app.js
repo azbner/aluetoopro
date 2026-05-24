@@ -14,7 +14,8 @@ const backdrop = document.getElementById("backdrop");
 const themeBtn = document.getElementById("themeBtn");
 const historyList = document.getElementById("historyList");
 const conversationTitle = document.getElementById("conversationTitle");
-const modelSelect = document.getElementById("modelSelectInline");
+// modelSelect remplace par custom picker
+const modelSelect = { value: "flash", disabled: false };
 const attachBtn = document.getElementById("attachBtn");
 const attachMenu = document.getElementById("attachMenu");
 const fileInput = document.getElementById("fileInput");
@@ -25,6 +26,8 @@ const welcomeGreeting = document.getElementById("welcomeGreeting");
 const attachOptions = document.querySelectorAll(".attach-option");
 
 let busy = false;
+let _abortController = null;
+let _abortController = null;
 let conversations = [];
 let currentConversationId = null;
 let pendingAttachments = [];
@@ -44,57 +47,56 @@ const GROQ_API_KEY = "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";
 const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
 
 const MODEL_MAP = {
-  flash: {
-    id: "llama-3.1-8b-instant",
-    label: "Aluetoo Flash",
-    supportsVision: false,
-    limit: 10,
-  },
-  pro: {
-    id: "openai/gpt-oss-120b",
-    label: "Aluetoo Pro",
-    supportsVision: false,
-    limit: 3,
-  },
-  vision: {
-    id: "meta-llama/llama-4-scout-17b-16e-instruct",
-    label: "Aluetoo Vision",
-    supportsVision: true,
-    limit: 3,
-  },
+  flash:  { id: "llama-3.1-8b-instant",                     label: "Aluetoo Flash",  supportsVision: false, limit: 10 },
+  pro:    { id: "openai/gpt-oss-120b",                       label: "Aluetoo Pro",    supportsVision: false, limit: 3  },
+  vision: { id: "meta-llama/llama-4-scout-17b-16e-instruct", label: "Aluetoo Vision", supportsVision: true,  limit: 3  },
 };
 
-// ─── Rate limiting 1h30 ──────────────────────────────────────────────────────
-const RATE_LIMIT_KEY = "aluetoo-rate-limits";
-const RATE_LIMIT_MS   = 90 * 60 * 1000;
-function getRateLimits() { try { return JSON.parse(localStorage.getItem(RATE_LIMIT_KEY) || "{}"); } catch (_e) { return {}; } }
-function saveRateLimits(l) { localStorage.setItem(RATE_LIMIT_KEY, JSON.stringify(l)); }
-function getModelUsage(alias) {
-  const l = getRateLimits(), e = l[alias];
-  if (!e || Date.now() >= e.resetAt) return { count: 0, resetAt: Date.now() + RATE_LIMIT_MS };
-  return e;
-}
-function incrementModelUsage(alias) {
-  const l = getRateLimits(), u = getModelUsage(alias);
-  u.count += 1; l[alias] = u; saveRateLimits(l);
-}
-function checkRateLimit(alias) {
-  const mdl = MODEL_MAP[alias];
-  if (!mdl) return { allowed: true };
-  const u = getModelUsage(alias);
-  if (u.count >= mdl.limit) {
-    const ms = u.resetAt - Date.now();
-    const h = Math.floor(ms / 3600000), m = Math.floor((ms % 3600000) / 60000);
-    const t = h > 0 ? h + "h" + (m > 0 ? m + "min" : "") : m + " minute" + (m > 1 ? "s" : "");
-    return { allowed: false, message: "Il reste " + t + " avant la reinitialisation." };
+// ─── Rate limiting 1h30 ─────────────────────────────────────────────────────
+const RATE_LIMIT_KEY = "aluetoo-rl-v3";
+const RATE_LIMIT_MS  = 90 * 60 * 1000;
+function _rl_get()        { try { return JSON.parse(localStorage.getItem(RATE_LIMIT_KEY)||"{}"); } catch(_e){return{};} }
+function _rl_save(d)      { localStorage.setItem(RATE_LIMIT_KEY, JSON.stringify(d)); }
+function _rl_usage(alias) { const d=_rl_get(),e=d[alias]; return(!e||Date.now()>=e.r)?{c:0,r:Date.now()+RATE_LIMIT_MS}:e; }
+function incrementModelUsage(alias){ const d=_rl_get(),u=_rl_usage(alias); u.c+=1; d[alias]=u; _rl_save(d); }
+function checkRateLimit(alias){
+  const mdl=MODEL_MAP[alias]; if(!mdl) return {allowed:true};
+  const u=_rl_usage(alias);
+  if(u.c>=mdl.limit){
+    const ms=u.r-Date.now(),h=Math.floor(ms/3600000),m=Math.floor((ms%3600000)/60000);
+    return {allowed:false,message:"Il reste "+(h>0?h+"h"+(m>0?m+"min":""):m+" minute"+(m>1?"s":""))+" avant la reinitialisation."};
   }
-  return { allowed: true };
+  return {allowed:true};
 }
-function showLimitMessage(label, limit, msg) {
-  const s = createAssistantShell();
+function showLimitMessage(label,limit,msg){
+  const s=createAssistantShell();
   s.text.classList.remove("typing-caret");
-  s.activityText.textContent = "Limite atteinte";
-  s.text.innerHTML = "<p><strong>Limite " + label + " atteinte</strong></p><p>Ce modele est limite a <strong>" + limit + " message" + (limit > 1 ? "s" : "") + "</strong> par periode de 1h30.</p><p>" + msg + "</p>";
+  s.activityText.textContent="Limite atteinte";
+  s.text.innerHTML="<p><strong>Limite "+label+" atteinte</strong></p><p>Ce modele est limite a <strong>"+limit+" message"+(limit>1?"s":"")+"</strong> par periode de 1h30.</p><p>"+msg+"</p>";
+  scrollMessages();
+}
+
+// ── Rate limiting 1h30 ──────────────────────────────────────────────────────
+const RATE_LIMIT_KEY = "aluetoo-rl-v2";
+const RATE_LIMIT_MS  = 90 * 60 * 1000;
+function _rl_get()         { try { return JSON.parse(localStorage.getItem(RATE_LIMIT_KEY)||"{}"); } catch(_){return{};} }
+function _rl_save(d)       { localStorage.setItem(RATE_LIMIT_KEY, JSON.stringify(d)); }
+function _rl_usage(alias)  { const d=_rl_get(),e=d[alias]; return (!e||Date.now()>=e.r)?{c:0,r:Date.now()+RATE_LIMIT_MS}:e; }
+function incrementModelUsage(alias){ const d=_rl_get(),u=_rl_usage(alias); u.c+=1; d[alias]=u; _rl_save(d); }
+function checkRateLimit(alias){
+  const mdl=MODEL_MAP[alias]; if(!mdl) return {allowed:true};
+  const u=_rl_usage(alias);
+  if(u.c>=mdl.limit){
+    const ms=u.r-Date.now(),h=Math.floor(ms/3600000),m=Math.floor((ms%3600000)/60000);
+    return {allowed:false, message:"Il reste "+(h>0?h+"h"+(m>0?m+"min":""):m+" minute"+(m>1?"s":""))+" avant la reinitialisation."};
+  }
+  return {allowed:true};
+}
+function showLimitMessage(label,limit,msg){
+  const s=createAssistantShell();
+  s.text.classList.remove("typing-caret");
+  s.activityText.textContent="Limite atteinte";
+  s.text.innerHTML="<p><strong>Limite "+label+" atteinte</strong></p><p>Ce modele est limite a <strong>"+limit+" message"+(limit>1?"s":"")+"</strong> par periode de 1h30.</p><p>"+msg+"</p>";
   scrollMessages();
 }
 
@@ -171,9 +173,10 @@ function autoResize() {
 
 function setBusy(nextBusy) {
   busy = nextBusy;
-  sendBtn.disabled = nextBusy;
+  sendBtn.disabled = false; // toujours cliquable (stop)
   modelSelect.disabled = nextBusy;
-  sendBtn.textContent = "↑";
+  sendBtn.textContent = nextBusy ? "□" : "↑";
+  sendBtn.classList.toggle("is-stop", nextBusy);
 }
 
 function toggleWelcome() {
@@ -197,9 +200,7 @@ function closeAttachMenu() {
   attachMenu.classList.remove("open");
   attachBtn.removeAttribute("data-open");
   window.setTimeout(() => {
-    if (!attachMenu.classList.contains("open")) {
-      attachMenu.hidden = true;
-    }
+    if (!attachMenu.classList.contains("open")) { attachMenu.hidden = true; }
   }, 180);
 }
 
@@ -207,7 +208,7 @@ function openAttachMenu() {
   attachMenu.hidden = false;
   requestAnimationFrame(() => {
     attachMenu.classList.add("open");
-    attachBtn.setAttribute("data-open", "true");
+    attachBtn.setAttribute("data-open","true");
   });
 }
 
@@ -692,14 +693,9 @@ function resetChat() {
 }
 
 function hydrateModels(models) {
-  if (!Array.isArray(models) || models.length === 0) {
-    return;
-  }
-
+  if (!Array.isArray(models) || models.length === 0) return;
   availableModels = models;
-  modelSelect.innerHTML = models
-    .map((model) => `<option value="${model.alias}">${model.label}</option>`)
-    .join("");
+  // pas de <select> natif a remplir
 }
 
 async function checkHealth() {
@@ -789,12 +785,14 @@ function maybeInitRecognition() {
   recognition.onstart = () => {
     recording = true;
     micBtn.textContent = "Stop";
+    micBtn.classList.add("recording");
     if (composerHint) composerHint.textContent = "Ecoute en cours...";
   };
 
   recognition.onend = () => {
     recording = false;
     micBtn.textContent = "Mic";
+    micBtn.classList.remove("recording");
     if (composerHint) composerHint.textContent = "Entree pour envoyer";
   };
 
@@ -821,7 +819,7 @@ function toggleMicrophone() {
   }
 }
 
-async function streamResponse(assistantMessageEl, conversation, attachments) {
+async function streamResponse(assistantMessageEl, conversation, attachments, abortSignal) {
   const hasImage = Array.isArray(attachments) && attachments.some((a) => a.kind === "image" && a.dataUrl);
   const alias = hasImage ? "vision" : groqNormalizeAlias(conversation.modelAlias);
   const model = MODEL_MAP[alias];
@@ -851,6 +849,7 @@ async function streamResponse(assistantMessageEl, conversation, attachments) {
 
   const response = await fetch(GROQ_API_URL, {
     method: "POST",
+    signal: abortSignal,
     headers: {
       "Content-Type": "application/json",
       "Authorization": "Bearer " + GROQ_API_KEY,
@@ -931,16 +930,13 @@ async function streamResponse(assistantMessageEl, conversation, attachments) {
 
 async function submitPrompt(prompt) {
   if ((!prompt && pendingAttachments.length === 0) || busy) { return; }
-  const hasImagePending = pendingAttachments.some((a) => a.kind === "image");
-  const effectiveAlias = hasImagePending ? "vision" : (modelSelect.value || "flash");
+  const hasImg = pendingAttachments.some((a) => a.kind === "image");
+  const effectiveAlias = hasImg ? "vision" : (window._currentAlias || "flash");
+  modelSelect.value = effectiveAlias;
   const rateCheck = checkRateLimit(effectiveAlias);
-  if (!rateCheck.allowed) {
-    const mdl = MODEL_MAP[effectiveAlias];
-    showLimitMessage(mdl.label, mdl.limit, rateCheck.message);
-    return;
-  }
+  if (!rateCheck.allowed) { showLimitMessage(MODEL_MAP[effectiveAlias].label, MODEL_MAP[effectiveAlias].limit, rateCheck.message); return; }
   const conversation = ensureConversation();
-  conversation.modelAlias = modelSelect.value;
+  conversation.modelAlias = effectiveAlias;
 
   const userMessage = {
     role: "user",
@@ -982,7 +978,9 @@ async function submitPrompt(prompt) {
   const assistantShell = createAssistantShell();
 
   try {
-    const assistantReply = await streamResponse(assistantShell, conversation, attachmentsForRequest);
+    _abortController = new AbortController();
+    setBusy(true);
+    const assistantReply = await streamResponse(assistantShell, conversation, attachmentsForRequest, _abortController.signal);
     incrementModelUsage(effectiveAlias);
     conversation.messages.push({
       role: "assistant",
@@ -993,6 +991,7 @@ async function submitPrompt(prompt) {
     reorderConversations(conversation.id);
     saveConversations();
     renderHistory();
+    addMessageActions(assistantShell.body, assistantShell.text.textContent || "");
   } catch (error) {
     assistantShell.text.classList.remove("typing-caret");
     assistantShell.text.innerHTML = `<p>Erreur: ${escapeHtml(error.message)}</p>`;
@@ -1017,6 +1016,10 @@ function bootstrapConversationState() {
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
+  if (busy && _abortController) {
+    _abortController.abort();
+    return;
+  }
   await submitPrompt(input.value.trim());
 });
 
@@ -1039,7 +1042,7 @@ fileInput.addEventListener("change", async (event) => {
   fileInput.value = "";
 });
 micBtn.addEventListener("click", toggleMicrophone);
-modelSelect.addEventListener("change", () => updateConversationModel(modelSelect.value));
+// model picker handled via setupModelPicker()
 attachOptions.forEach((option) => {
   option.addEventListener("click", () => {
     const kind = option.dataset.kind || "image";
@@ -1069,4 +1072,115 @@ bootstrapConversationState();
 updateGreeting();
 toggleWelcome();
 maybeInitRecognition();
+
+// ── Custom model picker ──────────────────────────────────────────────────────
+window._currentAlias = "flash";
+function setupModelPicker() {
+  const pillBtn  = document.getElementById("modelPillBtn");
+  const label    = document.getElementById("modelPillLabel");
+  const dropdown = document.getElementById("modelDropdown");
+  const options  = document.querySelectorAll(".model-option");
+
+  const LABELS = { flash: "Flash", pro: "Pro", vision: "Vision" };
+
+  function setAlias(alias) {
+    window._currentAlias = alias;
+    modelSelect.value = alias;
+    label.textContent = LABELS[alias] || alias;
+    options.forEach((o) => o.classList.toggle("active", o.dataset.alias === alias));
+    updateConversationModel(alias);
+  }
+
+  function toggleDropdown() {
+    const open = !dropdown.hidden;
+    dropdown.hidden = open;
+    pillBtn.classList.toggle("open", !open);
+  }
+
+  pillBtn.addEventListener("click", (e) => { e.stopPropagation(); toggleDropdown(); });
+
+  options.forEach((o) => {
+    o.addEventListener("click", () => {
+      setAlias(o.dataset.alias);
+      dropdown.hidden = true;
+      pillBtn.classList.remove("open");
+    });
+  });
+
+  document.addEventListener("click", (e) => {
+    if (!document.getElementById("modelPicker").contains(e.target)) {
+      dropdown.hidden = true;
+      pillBtn.classList.remove("open");
+    }
+  });
+
+  // Init
+  setAlias("flash");
+}
+
+
+// ─── Custom model picker ─────────────────────────────────────────────────────
+window._currentAlias = "flash";
+
+function setupModelPicker() {
+  const pillBtn  = document.getElementById("modelPillBtn");
+  const label    = document.getElementById("modelPillLabel");
+  const dropdown = document.getElementById("modelDropdown");
+  const options  = document.querySelectorAll(".model-option");
+  const SHORT = { flash:"Flash", pro:"Pro", vision:"Vision" };
+
+  function setAlias(alias) {
+    window._currentAlias = alias;
+    modelSelect.value = alias;
+    label.textContent = SHORT[alias] || alias;
+    options.forEach((o) => o.classList.toggle("active", o.dataset.alias === alias));
+  }
+
+  pillBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const open = !dropdown.hidden;
+    dropdown.hidden = open;
+    pillBtn.classList.toggle("open", !open);
+  });
+
+  options.forEach((o) => {
+    o.addEventListener("click", () => {
+      setAlias(o.dataset.alias);
+      updateConversationModel(o.dataset.alias);
+      dropdown.hidden = true;
+      pillBtn.classList.remove("open");
+    });
+  });
+
+  document.addEventListener("click", (e) => {
+    if (!document.getElementById("modelPicker").contains(e.target)) {
+      dropdown.hidden = true;
+      pillBtn.classList.remove("open");
+    }
+  });
+
+  setAlias("flash");
+}
+
+// ─── Message actions (copy / thumbs) ────────────────────────────────────────
+function addMessageActions(bodyEl, content) {
+  const bar = document.createElement("div");
+  bar.className = "message-actions";
+
+  const copyBtn = document.createElement("button");
+  copyBtn.className = "msg-action-btn";
+  copyBtn.textContent = "Copier";
+  copyBtn.addEventListener("click", async () => {
+    await navigator.clipboard.writeText(content).catch(() => {});
+    copyBtn.textContent = "Copie !";
+    copyBtn.classList.add("copied");
+    setTimeout(() => { copyBtn.textContent = "Copier"; copyBtn.classList.remove("copied"); }, 1800);
+  });
+
+  bar.append(copyBtn);
+  bodyEl.append(bar);
+}
+
 checkHealth();
+setupModelPicker();
+setupModelPicker();
