@@ -14,7 +14,7 @@ const backdrop = document.getElementById("backdrop");
 const themeBtn = document.getElementById("themeBtn");
 const historyList = document.getElementById("historyList");
 const conversationTitle = document.getElementById("conversationTitle");
-const modelSelect = document.getElementById("modelSelect");
+const modelSelect = document.getElementById("modelSelectInline");
 const attachBtn = document.getElementById("attachBtn");
 const attachMenu = document.getElementById("attachMenu");
 const fileInput = document.getElementById("fileInput");
@@ -67,13 +67,8 @@ const MODEL_MAP = {
 // ─── Rate limiting 1h30 ──────────────────────────────────────────────────────
 const RATE_LIMIT_KEY = "aluetoo-rate-limits";
 const RATE_LIMIT_MS   = 90 * 60 * 1000;
-
-function getRateLimits() {
-  try { return JSON.parse(localStorage.getItem(RATE_LIMIT_KEY) || "{}"); }
-  catch (_e) { return {}; }
-}
+function getRateLimits() { try { return JSON.parse(localStorage.getItem(RATE_LIMIT_KEY) || "{}"); } catch (_e) { return {}; } }
 function saveRateLimits(l) { localStorage.setItem(RATE_LIMIT_KEY, JSON.stringify(l)); }
-
 function getModelUsage(alias) {
   const l = getRateLimits(), e = l[alias];
   if (!e || Date.now() >= e.resetAt) return { count: 0, resetAt: Date.now() + RATE_LIMIT_MS };
@@ -99,9 +94,7 @@ function showLimitMessage(label, limit, msg) {
   const s = createAssistantShell();
   s.text.classList.remove("typing-caret");
   s.activityText.textContent = "Limite atteinte";
-  s.text.innerHTML = "<p><strong>Limite " + label + " atteinte</strong></p>" +
-    "<p>Ce modele est limite a <strong>" + limit + " message" + (limit > 1 ? "s" : "") +
-    "</strong> par periode de 1h30.</p><p>" + msg + "</p>";
+  s.text.innerHTML = "<p><strong>Limite " + label + " atteinte</strong></p><p>Ce modele est limite a <strong>" + limit + " message" + (limit > 1 ? "s" : "") + "</strong> par periode de 1h30.</p><p>" + msg + "</p>";
   scrollMessages();
 }
 
@@ -937,20 +930,15 @@ async function streamResponse(assistantMessageEl, conversation, attachments) {
 }
 
 async function submitPrompt(prompt) {
-  if ((!prompt && pendingAttachments.length === 0) || busy) {
-    return;
-  }
-
+  if ((!prompt && pendingAttachments.length === 0) || busy) { return; }
   const hasImagePending = pendingAttachments.some((a) => a.kind === "image");
   const effectiveAlias = hasImagePending ? "vision" : (modelSelect.value || "flash");
-
   const rateCheck = checkRateLimit(effectiveAlias);
   if (!rateCheck.allowed) {
     const mdl = MODEL_MAP[effectiveAlias];
     showLimitMessage(mdl.label, mdl.limit, rateCheck.message);
     return;
   }
-
   const conversation = ensureConversation();
   conversation.modelAlias = modelSelect.value;
 
