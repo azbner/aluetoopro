@@ -56,13 +56,6 @@
             </div>
           </div>
           <div class="topbar-right">
-            <div class="model-switcher glass">
-              <select id="modelSelect" aria-label="Choisir un modele">
-                <option value="flash">Aluetoo Flash</option>
-                <option value="pro">Aluetoo Pro</option>
-                <option value="vision">Aluetoo Vision</option>
-              </select>
-            </div>
             <button class="chip chip-button" id="themeBtn" type="button">Theme: Auto</button>
           </div>
         </header>
@@ -112,7 +105,15 @@
                 <input id="fileInput" type="file" multiple accept="image/*,video/*,.pdf" hidden />
                 <button class="tool-btn" id="micBtn" type="button" aria-label="Dicter un message">Mic</button>
               </div>
-              <button class="send-btn" type="submit" id="sendBtn" aria-label="Envoyer">↑</button>
+              <div class="model-pill glass" id="modelPill">
+                <select id="modelSelectInline" aria-label="Choisir un modele">
+                  <option value="flash">Flash</option>
+                  <option value="pro">Pro</option>
+                  <option value="vision">Vision</option>
+                </select>
+                <span class="model-pill-arrow">&#x276F;</span>
+              </div>
+              <button class="send-btn" type="submit" id="sendBtn" aria-label="Envoyer">&#x2191;</button>
             </div>
           </div>
         </form>
